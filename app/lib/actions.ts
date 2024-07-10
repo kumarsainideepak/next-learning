@@ -4,6 +4,8 @@ import { sql } from '@vercel/postgres';
 import { Invoice } from './definitions';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { signIn } from '@/auth';
+import { AuthError } from 'next-auth';
 
 export type State = {
   errors?: {
@@ -98,4 +100,23 @@ export async function deleteInvoice(id: string) {
   }
 
   revalidatePath('/dashboard/invoices');
+}
+
+export async function authenticate(prevState: string | undefined, formData: FormData) {
+  try {
+    console.log('before login');
+    await signIn('credentials', formData);
+    console.log('after login')
+  } catch (error) {
+    console.log('I am throwing error');
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials';
+        default:
+          return 'Something went wrong';
+      }
+    }
+    throw error;
+  }
 }
